@@ -1,0 +1,281 @@
+{
+  "px": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "pz": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "SUM",
+    "COUNT"
+  ],
+  "start_speed": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "SUM",
+    "COUNT"
+  ],
+  "end_speed": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "SUM",
+    "COUNT"
+  ],
+  "spin_rate": [
+    "MAX",
+    "MIN",
+    "SUM",
+    "MEAN",
+    "COUNT"
+  ],
+  "spin_dir": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "break_angle": [
+    "MAX",
+    "MIN",
+    "MEAN",
+    "SUM",
+    "COUNT"
+  ],
+  "break_length": [
+    "MEAN",
+    "SUM",
+    "MIN",
+    "MAX",
+    "COUNT"
+  ],
+  "break_y": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "ax": [
+    "MAX",
+    "MIN",
+    "COUNT",
+    "SUM",
+    "MEAN"
+  ],
+  "ay": [
+    "MEAN",
+    "SUM",
+    "MIN",
+    "MAX",
+    "COUNT"
+  ],
+  "az": [
+    "MIN",
+    "MAX",
+    "SUM",
+    "COUNT",
+    "MEAN"
+  ],
+  "sz_bot": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "SUM",
+    "COUNT"
+  ],
+  "sz_top": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "COUNT",
+    "SUM"
+  ],
+  "type_confidence": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "COUNT",
+    "SUM"
+  ],
+  "vx0": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "vy0": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "vz0": [
+    "MIN",
+    "MAX",
+    "COUNT",
+    "SUM",
+    "MEAN"
+  ],
+  "x": [
+    "MEAN",
+    "MAX",
+    "MIN",
+    "SUM",
+    "COUNT"
+  ],
+  "x0": [
+    "MAX",
+    "MIN",
+    "SUM",
+    "MEAN",
+    "COUNT"
+  ],
+  "y": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "y0": [
+    "MEAN",
+    "SUM",
+    "COUNT",
+    "MIN",
+    "MAX"
+  ],
+  "z0": [
+    "MEAN",
+    "SUM",
+    "MIN",
+    "MAX",
+    "COUNT"
+  ],
+  "pfx_x": [
+    "MEAN",
+    "SUM",
+    "MIN",
+    "MAX",
+    "COUNT"
+  ],
+  "pfx_z": [
+    "MAX",
+    "MIN",
+    "SUM",
+    "MEAN"
+  ],
+  "nasty": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "zone": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "code": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "type": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "pitch_type": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "event_num": [
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN",
+    "COUNT"
+  ],
+  "b_score": [
+    "MEAN",
+    "SUM",
+    "COUNT",
+    "MIN",
+    "MAX"
+  ],
+  "ab_id": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "b_count": [
+    "COUNT",
+    "MEAN",
+    "SUM",
+    "MAX",
+    "MIN"
+  ],
+  "s_count": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "outs": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "pitch_num": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "on_1b": [
+    "COUNT",
+    "SUM",
+    "MIN",
+    "MAX",
+    "MEAN"
+  ],
+  "on_2b": [
+    "MEAN",
+    "SUM",
+    "COUNT",
+    "MIN",
+    "MAX"
+  ],
+  "on_3b": [
+    "MEAN",
+    "SUM",
+    "COUNT",
+    "MIN",
+    "MAX"
+  ]
+}

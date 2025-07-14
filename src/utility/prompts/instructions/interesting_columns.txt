@@ -1,0 +1,1 @@
+Identify the columns that are likely to be useful for grouping or aggregating the data in meaningful ways. Please identify as many relevant columns as possible, ensuring you include at least one.

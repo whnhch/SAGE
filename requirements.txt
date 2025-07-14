@@ -1,0 +1,10 @@
+joblib==1.5.1
+matplotlib==3.5.1
+numba==0.61.2
+numpy==1.24.4
+pandas==2.3.0
+scikit_learn==1.7.0
+scipy==1.13.1
+torch==2.6.0
+tqdm==4.67.1
+transformers==4.52.4
