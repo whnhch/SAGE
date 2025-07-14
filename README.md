@@ -37,6 +37,7 @@ bash run_sage.sh
 ---
 
 ## 📂 Project Structure
+```
 ├── hf_token.txt             # Hugging Face access token
 ├── requirements.txt         # Python dependencies
 ├── run_sage.sh              # The script to run the SAGE algorithm
@@ -44,3 +45,4 @@ bash run_sage.sh
 ├── dataset/                 # Input datasets 
 ├── precompute/              # Precomputed models and results
 └── README.md
+```
