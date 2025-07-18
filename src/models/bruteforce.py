@@ -8,13 +8,13 @@ from src.diversity.helper import bruteforce_selection_parallel, concat_embedding
 from src.utility.helper import parallel_compute_utility
 from src.helper import *
 from src.utility.llama import Prompt, Llama3
-from src.utility.utility import get_precomputing_result
+from src.utility.utility import get_precomputing_result, get_precomputing_saved_result
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Experiment pipeline with argument control")
     parser.add_argument('--filename', type=str, default='marketing_data', help='CSV file name')
     parser.add_argument('--filepath', type=str, default='..', help='CSV file location')
-    parser.add_argument('--transformer_path', type=str, default='./', help='Transformer model location')
+    parser.add_argument('--transformer_path', type=str, default='/scratch/general/nfs1/u1472329/cache/', help='Transformer model location')
     parser.add_argument('--hf_token_path', type=str, default='hf_token.txt', help='Huggingface token path for llama and tapex')
     
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
@@ -42,6 +42,9 @@ def parse_args():
     parser.add_argument('--do_parallel', type=str2bool, default=False, help='Do you want to do parallel computation?')
     parser.add_argument('--do_cache', type=str2bool, default=True, help='Do you want to do cache computation?')
 
+    parser.add_argument('--interesting_attributes_path', type=str, default='./tmp', help='for interesting_attributes_path')
+    parser.add_argument('--attribute_aggfunc_ranks', type=str, default='./tmp', help='for attribute_aggfunc_ranks')
+    
     return parser.parse_args()
 
 def main(args):
@@ -63,9 +66,22 @@ def main(args):
     pr = Prompt()
     llm = Llama3()
 
-    interesting_attrs, unique_values_dict, aggfunc_ranks = get_precomputing_result(df=df, df_sample_num=args.df_sample_num, 
-                                                                                   llm=llm, pr=pr)
-
+    if os.path.exists(args.interesting_attributes_path) and os.path.exists(args.attribute_aggfunc_ranks):
+        print("Using existing files for attributes")
+        interesting_attrs, unique_values_dict, aggfunc_ranks = get_precomputing_saved_result(
+            df=df,
+            interesting_attrs_path=args.interesting_attributes_path,
+            attribute_aggfunc_ranks_path=args.attribute_aggfunc_ranks
+        )
+    else:
+        print("No existing files for attributes")
+        interesting_attrs, unique_values_dict, aggfunc_ranks = get_precomputing_result(
+            df=df,
+            df_sample_num=args.df_sample_num,
+            llm=llm,
+            pr=pr
+        )
+        
     params = set_params(args)
 
     prune_dir, utility_dir, diversity_dir = get_experiment_folders(args.output_dir, params)
@@ -136,6 +152,7 @@ def main(args):
         query_tokenizer, query_model,
         table_tokenizer, table_model,
         device,
+        32,
         output_dir=diversity_dir,
         concat_embeddings_fn=concat_embeddings
     )

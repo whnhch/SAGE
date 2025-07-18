@@ -1,9 +1,6 @@
-'''
-Codes for using the LLM
-'''
 import torch
 import transformers
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 import pandas as pd
 import json
 from collections import Counter
@@ -42,10 +39,11 @@ REQUIRED_KEYS = {
 }  
 
 class Prompt:
-    def __init__(self, prompt_path=PROMPT_PATH, instruction_path=INSTRUCTION_PATH, pt:pd.DataFrame=None, value:str=None, aggfunc:str='mean'):
+    def __init__(self, prompt_path=PROMPT_PATH, instruction_path=INSTRUCTION_PATH, 
+                 pt:pd.DataFrame=None, value:str=None, aggfunc:str='mean', unique_dict:dict=None):
         self.prompt_path = prompt_path
         self.instruction_path = instruction_path
-        if pt is not None: self.ptf = PivotTableFormatter(pt, value, aggfunc)
+        if pt is not None: self.ptf = PivotTableFormatter(pt, value, aggfunc, unique_dict)
         
     def load_instruction(self, task_name: str, keywords: dict):
         file_path = os.path.join(self.instruction_path, f"{task_name}.txt")

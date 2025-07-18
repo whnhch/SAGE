@@ -4,7 +4,7 @@ export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
 FILENAME="house"
 FILEPATH="./dataset/"
-GAMMA=5000.0 
+GAMMA=500000000.0
 
 DATA_FRAC=1.0
 MAX_COLUMNS=90
@@ -21,8 +21,8 @@ DF_SAMPLE_NUM=5
 TAU_COR=0.8
 TAU_RAT=5.0
 DO_PRUNE=true
-DO_PARALLEL=true
 DO_CACHE=true
+DO_PARALLEL=false
 DO_TIMEOUT=false
 
 THRESHOLD=0.3
@@ -47,7 +47,7 @@ python ./src/models/greedy.py \
     --tau_cor "$TAU_COR" \
     --tau_rat "$TAU_RAT" \
     --do_prune "$DO_PRUNE" \
-    --do_timeout "$DO_TIMEOUT" \x
+    --do_timeout "$DO_TIMEOUT" \
     --output_dir "result/" \
     --data_num "$DATA_FRAC"\
     --max_columns "$MAX_COLUMNS"\

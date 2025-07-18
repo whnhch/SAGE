@@ -1,7 +1,4 @@
-'''
-Code for getting values from the pivot tables
-'''
-from typing import List, Union
+from typing import Tuple, List, Union
 import re
 
 class PivotTableFormatter:
@@ -17,6 +14,8 @@ class PivotTableFormatter:
         - Handles values like '51.0|74.0' by checking each and returning shared or joined bin strings.
         - Leaves values untouched if bins are not defined.
         """
+#         print(f"\n[transform_values_in_categorization] attribute: {attribute}")
+#         print(f"[Input] values: {values}")
 
         unique_values = list(self.unique_dict.get(attribute, []))
         is_bin_format = all(isinstance(s, str) and re.match(r'\(([-\d.]+), ([-\d.]+)\]', s) for s in unique_values)
@@ -24,6 +23,7 @@ class PivotTableFormatter:
         def get_bin_label(val):
             str_val = str(val)
             if str_val in unique_values:
+#                 print(f"  - Direct match for '{str_val}' → {str_val}")
                 return str_val
 
             if is_bin_format:
@@ -35,11 +35,15 @@ class PivotTableFormatter:
                             lower = float(match.group(1))
                             upper = float(match.group(2))
                             if lower < num_val <= upper:
+#                                 print(f"  - Numeric match: {num_val} ∈ {bin_str}")
                                 return bin_str
+                    # print(f"  - No matching bin for {val}")
                     return "0"
                 except ValueError:
+                    # print(f"  - ValueError parsing {val}")
                     return "0"
             else:
+                # print(f"  - Not bin format. Returning as-is: {str_val}")
                 return str_val
 
         def transform_single(value):
@@ -227,6 +231,7 @@ class PivotTableFormatter:
         if not isinstance(column_values, tuple):
             column_values = (column_values,)
 
+        # Special case: ignore first column level when transposed
         if not isRow and len(column_names) >= 2:
             column_names = column_names[1:]
             column_values = column_values[1:]

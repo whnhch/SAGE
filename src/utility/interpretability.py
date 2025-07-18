@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from typing import List
 from src.utility.llama import *
-from typing import List, Any, Optional
+from typing import List, Any, Union, Optional
 
 RANK_MAP={
     0: 1.0,
@@ -60,7 +60,7 @@ class NaiveInterpretability:
         self.query_semantics = self.calculate_groupby_semantic(group_vals)
 
         self.concise = self.calculate_conciseness(total_size, tau_c=16, z=0.05, _lambda=0.5)
-
+        
         if not self.prune: self.interpretability_score = 1/3*(self.density+self.query_semantics+self.concise)
         else: self.interpretability_score = 1/2*(self.query_semantics+self.concise)
 

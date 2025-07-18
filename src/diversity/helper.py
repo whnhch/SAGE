@@ -9,6 +9,8 @@ import pandas as pd
 import json
 from multiprocessing import Pool, get_context
 from itertools import combinations, islice
+from tqdm import tqdm  
+import sys
 
 def sqrt_cdist(matrix1: np.ndarray , matrix2: np.ndarray ):
     dist = cdist(matrix1, matrix2, metric="cosine")/2.0
@@ -58,39 +60,59 @@ def concat_embeddings(query_embeddings_list: List[np.ndarray], table_embeddings_
 
     return combined
 
-def get_all_embeddings(sql_queries, pivot_tables, query_tokenizer, query_model, table_tokenizer, table_model, device):
-    """
-    Compute and return embeddings for lists of SQL queries and pivot tables.
+import torch
+import numpy as np
+from typing import List, Tuple
 
-    Args:
-        sql_queries (List[str]): List of SQL query strings.
-        pivot_tables (List[str]): List of pivot table strings.
-        query_tokenizer: Tokenizer for query model.
-        query_model: Embedding model for SQL queries.
-        table_tokenizer: Tokenizer for table model.
-        table_model: Embedding model for tables.
-        device: Device to run models on (e.g., 'cpu' or 'cuda').
-
-    Returns:
-        Tuple[List[Tensor], List[Tensor]]: 
-            - query_embeddings_list: List of query embeddings
-            - table_embeddings_list: List of table embeddings
-    """
+def get_all_embeddings(sql_queries, pivot_tables,
+                       query_tokenizer, query_model,
+                       table_tokenizer, table_model,
+                       device, batch_size=16):
+    
     query_embeddings_list = []
     table_embeddings_list = []
 
-    for sql_query, pivot in zip(sql_queries, pivot_tables):
-        query_vec, table_vec = get_embeddings(
-            query_tokenizer, query_model,
-            table_tokenizer, table_model,
-            sql_query, pivot, device
-        )
-        query_embeddings_list.append(query_vec)
-        table_embeddings_list.append(table_vec)
+    total_batches = (len(sql_queries) + batch_size - 1) // batch_size
+
+    for start_idx in tqdm(range(0, len(sql_queries), batch_size), total=total_batches, desc="Encoding batches"):
+        end_idx = start_idx + batch_size
+        batch_queries = sql_queries[start_idx:end_idx]
+        batch_tables = pivot_tables[start_idx:end_idx]
+
+        # --- Query Embeddings ---
+        query_inputs = query_tokenizer(batch_queries, return_tensors="pt", padding=True, truncation=True).to(device)
+        query_outputs = query_model(**query_inputs)
+        query_batch_embeddings = query_outputs.last_hidden_state.mean(dim=1)
+        query_embeddings_list.extend([vec.detach().cpu().numpy() for vec in query_batch_embeddings])
+
+        # --- Table Embeddings ---
+        table_input_batches = []
+        for pivot in batch_tables:
+            pivot.columns = [str(col) if col is not None else "" for col in pivot.columns]
+            table_input = table_tokenizer(table=pivot.astype(str),
+                                          query="Summarize the table",
+                                          return_tensors="pt",
+                                          padding=True,
+                                          truncation=True)
+            table_input_batches.append(table_input)
+
+        def collate_table_inputs(key: str):
+            return torch.nn.utils.rnn.pad_sequence(
+                [b[key].squeeze(0) for b in table_input_batches],
+                batch_first=True,
+                padding_value=table_tokenizer.pad_token_id
+            ).to(device)
+
+        table_inputs = {
+            key: collate_table_inputs(key)
+            for key in table_input_batches[0]
+        }
+
+        table_outputs = table_model.model.encoder(**table_inputs)
+        table_batch_embeddings = table_outputs.last_hidden_state.mean(dim=1)
+        table_embeddings_list.extend([vec.detach().cpu().numpy() for vec in table_batch_embeddings])
 
     return query_embeddings_list, table_embeddings_list
-
-
 def get_embeddings(query_tokenizer, query_model, table_tokenizer, table_model,
                    sql_query, pivot,
                    device):
@@ -115,6 +137,7 @@ def compute_and_concat_embeddings_with_timing(
     table_tokenizer,
     table_model,
     device,
+    batch_size,
     output_dir,
     concat_embeddings_fn
 ):
@@ -134,21 +157,21 @@ def compute_and_concat_embeddings_with_timing(
         combined_embeddings: Result of concat_embeddings_fn
     """
     os.makedirs(output_dir, exist_ok=True)
-
+    print(f"Encoder feeding with {batch_size} batch size is starting...")
     start_embed = time.time()
     query_embeddings_list, table_embeddings_list = get_all_embeddings(
         sql_queries, pivot_tables,
         query_tokenizer, query_model,
         table_tokenizer, table_model,
-        device
+        device, batch_size
     )
     end_embed = time.time()
+    print(f"Encoder feeding with {batch_size} batch size finished!")
 
     start_concat = time.time()
     combined_embeddings = concat_embeddings_fn(query_embeddings_list, table_embeddings_list)
     end_concat = time.time()
 
-    # Save timing info
     time_path = os.path.join(output_dir, "embedding_time.csv")
     with open(time_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["embedding_time_sec", "concat_time_sec"])

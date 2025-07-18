@@ -38,7 +38,7 @@ def parallel_compute_utility(
     combs, df, llm, interesting_attrs, aggfunc_ranks,
     clf_trd, clf_out, args_obj, output_dir, unique_dict,
     gamma, tau_cor, tau_rat, prune,
-    num_workers=4, do_parallel = True
+    num_workers=4, do_parallel = False
 ):
     start_time = time.time()  
 
@@ -139,7 +139,7 @@ def get_single_utilty(comb, df, llm,
         index=index,
         columns=columns,
         values=value,
-        aggfunc=aggfunc.lower() 
+        aggfunc=aggfunc.lower()  
     )
     
     if len(columns)==0: columns=''
@@ -173,7 +173,7 @@ def get_single_utilty(comb, df, llm,
     result["outlier score"] = utility.ins_model.surprise_score
     result["insightfulness score"] = utility.ins_model.insightfulness_score
     
-    return result, pivot, sql_query
+    return result, pt, sql_query
 
 def compute_utility_with_embeddings(
     combs: List[Dict[str, Any]],
@@ -204,7 +204,6 @@ def compute_utility_with_embeddings(
     start_time = time.time()
 
     for comb in combs:
-#         try:
         result, pivot, sql_query = get_single_utilty(
             comb, df, llm, interesting_attrs, aggfunc_ranks, clf_trd, clf_out, unique_dict, output_dir,
             gamma=gamma, tau_cor=tau_cor, tau_rat=tau_rat,
@@ -213,9 +212,6 @@ def compute_utility_with_embeddings(
         results.append(result)
         sql_queries.append(sql_query)
         pivots.append(pivot)
-#         except Exception as e:
-#             print(f"[Utility] Failed on comb: {comb} → {e}")
-#             continue
 
     elapsed = time.time() - start_time
 
@@ -275,6 +271,7 @@ def compute_utility(
 
     elapsed = time.time() - start_time
 
+    # Save utility scores
     if results:
         keys = results[0].keys()
         csv_path = os.path.join(output_dir, "utility_scores.csv")
@@ -283,6 +280,7 @@ def compute_utility(
             writer.writeheader()
             writer.writerows(results)
 
+    # Save timing info
     with open(os.path.join(output_dir, "utility_total_time.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Metric", "Value"])  

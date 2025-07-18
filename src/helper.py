@@ -172,6 +172,7 @@ def prune_combinations(
 
     elapsed_time = time.time() - start_time
 
+    # Save results to CSV
     if pruned_result:
         keys = pruned_result[0].keys()
         csv_path = os.path.join(output_dir, "pruned.csv")

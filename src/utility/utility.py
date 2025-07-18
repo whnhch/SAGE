@@ -1,6 +1,6 @@
 from src.utility.insightfulness import *
 from src.utility.interpretability import *
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import time
 
 def get_precomputing_result(df:pd.DataFrame, df_sample_num=5, llm:Llama3=None, pr:Prompt=None):
@@ -73,7 +73,6 @@ def retrieve_unique_values(attr: pd.Series, max_unique: int = 100, bin_numeric: 
 
     if bin_numeric and pd.api.types.is_numeric_dtype(attr) and len(unique_vals) > 10:
         try:
-            #  bucketize the numerics
             binned = pd.qcut(attr, q=bin_count, duplicates='drop')
             return binned.astype(str).unique().tolist()
         except ValueError:
@@ -114,7 +113,6 @@ class Utility:
         self.insightfulness=0
         self.interesting_columns = False
         
-        # TODO add this into configs
         self.alpha = 0.5
         self.utility_score = 0
         self.interesting_columns = indicator(query, interesting_attributes)
