@@ -14,7 +14,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Experiment pipeline with argument control")
     parser.add_argument('--filename', type=str, default='marketing_data', help='CSV file name')
     parser.add_argument('--filepath', type=str, default='..', help='CSV file location')
-    parser.add_argument('--transformer_path', type=str, default='', help='Transformer model location')
+    parser.add_argument('--transformer_path', type=str, default='./cache/hub', help='Transformer model location')
     parser.add_argument('--hf_token_path', type=str, default='hf_token.txt', help='Huggingface token path for llama and tapex')
     
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
