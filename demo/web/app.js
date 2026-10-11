@@ -1,19 +1,42 @@
 // SAGE static demo — a port of demo/demo (Streamlit) to plain HTML/JS.
-// Recommendations and scores are the precomputed demo results from
+// Recommendations are the precomputed example results from
 // demo/demo/components/table_list.py and pivot_table.py.
 
-const DATA_URL = "data/zomato.csv";
+// Attributes of the example restaurant dataset that the recommendations draw on.
+const ATTRIBUTES = ["ID", "City", "Cuisines", "Price Range", "Cost", "Rating", "Has Online Delivery"];
 
 // ---------------------------------------------------------------------------
 // Demo results
 // table: { rowName, rows, group (column-level header, optional), cols, values[row][col], decimals }
+//
+// Per-table scores follow SAGE's utility (src/utility/utility.py):
+//   utility = 0.5 * insightfulness + 0.5 * interpretability
+//   insightfulness   = Attribute Significance * max(Informativeness, Trend, Surprise)
+//   interpretability = mean(Density, Semantic Validity, Conciseness)
+// Informativeness / Trend / Surprise / Conciseness are computed from each table's values with
+// SAGE's formulas, calibrated so "COUNT(ID) GROUP BY City, Cuisines" keeps its original demo scores.
+// Semantic Validity reflects how well the aggregate fits the measure (AVG > COUNT > MAX > MIN), and
+// Attribute Significance (LLM-derived in SAGE) is set so each table reproduces its fixed utility.
 // ---------------------------------------------------------------------------
+function scores(significance, informativeness, trend, surprise, semanticValidity, conciseness) {
+  return {
+    insightfulness: {
+      "Attribute Significance": significance,
+      "Informativeness": informativeness,
+      "Trend": trend,
+      "Surprise": surprise,
+    },
+    interpretability: { "Density": 1.00, "Semantic Validity": semanticValidity, "Conciseness": conciseness },
+  };
+}
+
 const CUISINES = ["Italian", "French", "Japanese"];
 const CITIES = ["Bengaluru", "New Delhi", "Mumbai"];
 
 const PIVOT_TABLES_ITER1 = [
   {
     query: "AVG(Rating) GROUP BY Price Range, Cuisines",
+    scores: scores(0.68, 0.25, 0.51, 1.00, 1.00, 0.95),
     utility: 83,
     table: {
       rowName: "Cuisines", rows: CUISINES, group: "Price Range", cols: ["$", "$$", "$$$"],
@@ -22,6 +45,7 @@ const PIVOT_TABLES_ITER1 = [
   },
   {
     query: "COUNT(ID) GROUP BY City, Cuisines",
+    scores: scores(0.87, 0.75, 0.55, 0.60, 0.90, 0.95),
     utility: 80,
     table: {
       rowName: "Cuisines", rows: CUISINES, group: "City", cols: CITIES,
@@ -30,16 +54,19 @@ const PIVOT_TABLES_ITER1 = [
   },
   {
     query: "MAX(Cost) GROUP BY Cuisines",
+    scores: scores(0.24, 0.32, 0.00, 0.90, 0.80, 0.98),
     utility: 57,
     table: { rowName: "Cuisines", rows: CUISINES, cols: ["Cost"], values: [[1300], [1200], [1000]] },
   },
   {
     query: "AVG(Rating) GROUP BY City",
+    scores: scores(0.56, 0.09, 0.00, 0.90, 1.00, 0.98),
     utility: 75,
     table: { rowName: "City", rows: CITIES, cols: ["Rating"], values: [[4.4], [4.5], [4.2]], decimals: 1 },
   },
   {
     query: "COUNT(ID) GROUP BY Cuisines, Has Online Delivery",
+    scores: scores(0.51, 0.87, 0.00, 0.45, 0.90, 0.97),
     utility: 70,
     table: {
       rowName: "Cuisines", rows: CUISINES, group: "Has Online Delivery", cols: ["Yes", "No"],
@@ -51,6 +78,7 @@ const PIVOT_TABLES_ITER1 = [
 const PIVOT_TABLES_ITER2 = [
   {
     query: "AVG(Rating) GROUP BY City, Cuisines",
+    scores: scores(0.72, 0.11, 0.55, 1.00, 1.00, 0.95),
     utility: 85,
     table: {
       rowName: "Cuisines", rows: CUISINES, group: "City", cols: CITIES,
@@ -59,11 +87,13 @@ const PIVOT_TABLES_ITER2 = [
   },
   {
     query: "AVG(Cost) BY City",
+    scores: scores(0.79, 0.66, 0.00, 0.90, 1.00, 0.98),
     utility: 85,
     table: { rowName: "City", rows: CITIES, cols: ["Cost"], values: [[800], [1200], [1400]] },
   },
   {
     query: "MIN(Rating) By City, Price Range",
+    scores: scores(0.59, 0.37, 0.99, 1.00, 0.60, 0.95),
     utility: 72,
     table: {
       rowName: "City", rows: CITIES, group: "Price Range", cols: ["$", "$$", "$$$"],
@@ -72,37 +102,49 @@ const PIVOT_TABLES_ITER2 = [
   },
 ];
 
-// Shown in "Liked Tables" once the dataset is loaded (not part of the recommendations).
-const DEFAULT_LIKED_QUERY = "AVG(Rating) GROUP BY Price Range, City";
-
 const ITER_RESULTS = {
-  1: {
-    tables: PIVOT_TABLES_ITER1,
-    diversity: 32,
-    insightfulness: { "Attribute Significance": 0.87, "Informativeness": 0.75, "Trend": 0.55, "Surprise": 0.60 },
-    interpretability: { "Density": 1.00, "Semantic Validity": 0.90, "Conciseness": 0.95 },
-  },
-  2: {
-    tables: PIVOT_TABLES_ITER2,
-    diversity: 30,
-    insightfulness: { "Attribute Significance": 1.00, "Informativeness": 0.70, "Trend": 0.00, "Surprise": 0.00 },
-    interpretability: { "Density": 1.00, "Semantic Validity": 1.00, "Conciseness": 1.00 },
-  },
+  1: { tables: PIVOT_TABLES_ITER1, diversity: 32 },
+  2: { tables: PIVOT_TABLES_ITER2, diversity: 30 },
+};
+
+// Guide-mode explanations, keyed by the data-tip of each "?" badge.
+const GUIDE_TIPS = {
+  dataset: "The example dataset. SAGE searches over pivot tables built from these attributes: which to group by, which to aggregate, and how (AVG, COUNT, MAX, …).",
+  diversity: "How different the recommended tables should be from one another. Higher values favor tables over different attributes and aggregations.",
+  numTables: "How many pivot tables to recommend.",
+  attributes: "Attributes you care about. SAGE favors tables that use them.",
+  recommend: "Runs SAGE with these settings. In this demo the results are precomputed.",
+  recs: "The recommended pivot tables, chosen to be both high-quality and varied.",
+  achievedDiversity: "How varied the recommended set actually is.",
+  query: "The pivot table's definition: an aggregate of one attribute, grouped by one or two others.",
+  utility: "Overall quality of a table: the average of its insightfulness and interpretability.",
+  actions: "View Details opens the table's score breakdown. 👍 / 👎 records your feedback.",
+  detail: "Score breakdown for the selected table.",
+  insightfulness: "How much the table reveals: Attribute Significance × the strongest of Informativeness, Trend and Surprise.",
+  "Attribute Significance": "How meaningful the chosen attributes are for analysis. In SAGE this is judged with an LLM.",
+  "Informativeness": "How much the values differ across rows and columns.",
+  "Trend": "How strongly rows or columns move together.",
+  "Surprise": "Whether a value stands out sharply from the rest.",
+  interpretability: "How easy the table is to read: the average of Density, Semantic Validity and Conciseness.",
+  "Density": "Share of cells that have a value. No empty cells means 100%.",
+  "Semantic Validity": "Whether the aggregation makes sense for the measure, e.g. AVG of ratings rather than MIN.",
+  "Conciseness": "Smaller tables are easier to take in, so they score higher.",
+  prefs: "Your feedback during this session.",
+  liked: "Tables you marked 👍. In SAGE, feedback guides the next round of recommendations.",
+  disliked: "Tables you marked 👎. In SAGE, feedback guides the next round of recommendations.",
 };
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 const state = {
-  columns: [],
-  rows: [],
   diversity: 20,
   numTables: 5,
   attributes: [],
   iteration: 0,
   recommend: false,
   selected: null,
-  liked: new Set(),     // keys: `${iteration}|${query}`
+  liked: new Set(),     // queries
   disliked: new Set(),
   loginTime: new Date(),
 };
@@ -110,7 +152,6 @@ const state = {
 // First click shows iteration-1 results; every later click shows iteration-2 results.
 const currentResults = () => ITER_RESULTS[state.iteration <= 1 ? 1 : 2];
 const visibleTables = () => currentResults().tables.slice(0, state.numTables);
-const likeKey = (query) => `${state.iteration}|${query}`;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -125,36 +166,14 @@ function esc(value) {
     .replace(/"/g, "&quot;");
 }
 
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
-      else if (c === '"') inQuotes = false;
-      else field += c;
-    } else if (c === '"') inQuotes = true;
-    else if (c === ",") { row.push(field); field = ""; }
-    else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(field); field = "";
-      rows.push(row); row = [];
-    } else field += c;
-  }
-  if (field !== "" || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.length > 1 || r[0] !== "");
-}
-
-const isNumeric = (v) => v !== "" && !isNaN(Number(v));
-
 function formatValue(v, decimals) {
   return decimals ? v.toFixed(decimals) : v.toLocaleString("en-US");
 }
 
 const pct = (v) => `${Math.round(v * 100)}%`;
+
+// "?" badge, visible only in guide mode.
+const tip = (key) => `<button type="button" class="guide-dot" data-tip="${esc(key)}" aria-label="What is this?">?</button>`;
 
 function pivotTableHTML(t) {
   const head = t.group
@@ -197,9 +216,9 @@ function radarSVG(scores) {
   </svg>`;
 }
 
-function metricRow(name, value, overall = false) {
+function metricRow(name, value, overall = false, tipKey = name) {
   return `<div class="metric-row${overall ? " overall" : ""}">
-    <span>${esc(name)}</span>
+    <span>${esc(name)}${tip(tipKey)}</span>
     <div class="bar"><span style="width:${(value * 100).toFixed(0)}%"></span></div>
     <span class="pct">${pct(value)}</span>
   </div>`;
@@ -209,19 +228,13 @@ function metricRow(name, value, overall = false) {
 // Rendering
 // ---------------------------------------------------------------------------
 function renderPreview() {
-  const head = state.columns.map((c) => `<th>${esc(c)}</th>`).join("");
-  const body = state.rows
-    .slice(0, 3)
-    .map((r) => `<tr>${r.map((v) => `<td${isNumeric(v) ? ' class="num"' : ""}>${esc(v)}</td>`).join("")}</tr>`)
-    .join("");
-  $("preview").innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
-  $("dataset-chip").textContent =
-    `zomato.csv · ${state.rows.length.toLocaleString("en-US")} rows × ${state.columns.length} columns`;
+  $("preview").innerHTML = `<p><b>Example dataset:</b>${tip("dataset")} restaurants (city, cuisine, price range, cost, rating, online delivery)</p>
+    <div class="attr-list">${ATTRIBUTES.map((a) => `<span class="attr">${esc(a)}</span>`).join("")}</div>`;
 }
 
 function renderAttributes() {
   const select = $("attr-select");
-  const available = state.columns.filter((c) => !state.attributes.includes(c));
+  const available = ATTRIBUTES.filter((c) => !state.attributes.includes(c));
   select.innerHTML = `<option value="">Choose an attribute…</option>` +
     available.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
   $("attr-chips").innerHTML = state.attributes
@@ -237,21 +250,21 @@ function renderParams() {
 function renderList() {
   const el = $("rec-list");
   if (!state.recommend) {
-    el.innerHTML = `<h2>Recommendations</h2><p class="subtle">Set parameters and press <b>Recommend</b>.</p>`;
+    el.innerHTML = `<h2>Recommendations${tip("recs")}</h2><p class="subtle">Set parameters and press <b>Recommend</b>.</p>`;
     return;
   }
   const tables = visibleTables();
   const cards = tables
     .map((p, idx) => {
-      const key = likeKey(p.query);
-      const liked = state.liked.has(key);
-      const disliked = state.disliked.has(key);
+      const liked = state.liked.has(p.query);
+      const disliked = state.disliked.has(p.query);
       const classes = ["rec-card", liked && "liked", disliked && "disliked", state.selected === idx && "selected"]
         .filter(Boolean).join(" ");
       return `<div class="${classes}">
-        <p><b>Query:</b> ${esc(p.query)}</p>
-        <p><b>Utility Score:</b> ${p.utility}%</p>
+        <p><b>Query:</b> ${esc(p.query)}${idx === 0 ? tip("query") : ""}</p>
+        <p><b>Utility Score:</b> ${p.utility}%${idx === 0 ? tip("utility") : ""}</p>
         ${pivotTableHTML(p.table)}
+        ${idx === 0 ? `<div class="actions-tip">${tip("actions")}</div>` : ""}
         <div class="rec-actions">
           <button type="button" data-view="${idx}">View Details</button>
           <button type="button" data-like="${idx}" class="${liked ? "on-like" : ""}" aria-pressed="${liked}" aria-label="Like">👍</button>
@@ -260,14 +273,14 @@ function renderList() {
       </div>`;
     })
     .join("");
-  el.innerHTML = `<h2>Recommendations (${tables.length})</h2>
-    <p class="subtle">Diversity: ${currentResults().diversity}%</p>
+  el.innerHTML = `<h2>Recommendations (${tables.length})${tip("recs")}</h2>
+    <p class="subtle">Diversity: ${currentResults().diversity}%${tip("achievedDiversity")}</p>
     ${cards}`;
 }
 
 function renderDetail() {
   const el = $("detail");
-  const header = `<h2>Pivot Table Visualization</h2>`;
+  const header = `<h2>Pivot Table Visualization${tip("detail")}</h2>`;
   const p = state.selected === null ? null : visibleTables()[state.selected];
   if (!p) {
     el.innerHTML = header + (state.recommend
@@ -275,7 +288,7 @@ function renderDetail() {
       : "");
     return;
   }
-  const { insightfulness: ins, interpretability: interp } = currentResults();
+  const { insightfulness: ins, interpretability: interp } = p.scores;
   const insOverall = ins["Attribute Significance"] * Math.max(ins["Informativeness"], ins["Trend"], ins["Surprise"]);
   const interpValues = Object.values(interp);
   const interpOverall = interpValues.reduce((a, b) => a + b, 0) / interpValues.length;
@@ -283,49 +296,41 @@ function renderDetail() {
   el.innerHTML = `${header}
     <h3 class="detail-query">${esc(p.query)}</h3>
     ${pivotTableHTML(p.table)}
-    <h3 class="detail-utility">Utility: ${p.utility}%</h3>
+    <h3 class="detail-utility">Utility: ${p.utility}%${tip("utility")}</h3>
     <div class="metrics">
       <div class="metric-col">
-        ${metricRow("Insightfulness", insOverall, true)}
+        ${metricRow("Insightfulness", insOverall, true, "insightfulness")}
         ${Object.entries(ins).map(([k, v]) => metricRow(k, v)).join("")}
         ${radarSVG(ins)}
       </div>
       <div class="metric-col">
-        ${metricRow("Interpretability", interpOverall, true)}
+        ${metricRow("Interpretability", interpOverall, true, "interpretability")}
         ${Object.entries(interp).map(([k, v]) => metricRow(k, v)).join("")}
         ${radarSVG(interp)}
       </div>
     </div>`;
 }
 
-function sortedQueries(set) {
-  const seen = new Set();
-  return [...set]
-    .map((k) => { const i = k.indexOf("|"); return [Number(k.slice(0, i)), k.slice(i + 1)]; })
-    .sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]))
-    .map(([, q]) => q)
-    .filter((q) => !seen.has(q) && seen.add(q));
-}
-
 function renderPrefs() {
-  const liked = [...(state.rows.length ? [DEFAULT_LIKED_QUERY] : []),
-    ...sortedQueries(state.liked).filter((q) => q !== DEFAULT_LIKED_QUERY)];
-  const disliked = sortedQueries(state.disliked);
+  const liked = [...state.liked];
+  const disliked = [...state.disliked];
   const t = state.loginTime;
   const stamp = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")} ` +
     `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
 
-  $("prefs").innerHTML = `<h2>User Preferences</h2>
+  $("prefs").innerHTML = `<h2>User Preferences${tip("prefs")}</h2>
     <div class="pref-meta">
       <p><b>User:</b> guest</p>
       <p><b>Session start:</b> ${stamp}</p>
     </div>
     <div class="pref-box">
-      <h4>👍 Liked Tables</h4>
-      ${liked.map((q) => `<div class="pref-item like">${esc(q)}</div>`).join("")}
+      <h4>👍 Liked Tables${tip("liked")}</h4>
+      ${liked.length
+        ? liked.map((q) => `<div class="pref-item like">${esc(q)}</div>`).join("")
+        : `<p class="muted"><i>No liked tables yet</i></p>`}
     </div>
     <div class="pref-box">
-      <h4>👎 Disliked Tables</h4>
+      <h4>👎 Disliked Tables${tip("disliked")}</h4>
       ${disliked.length
         ? disliked.map((q) => `<div class="pref-item dislike">${esc(q)}</div>`).join("")
         : `<p class="muted"><i>No disliked tables yet</i></p>`}
@@ -336,6 +341,8 @@ function renderResults() {
   renderList();
   renderDetail();
   renderPrefs();
+  hideTip();
+  updateCoach();
 }
 
 // ---------------------------------------------------------------------------
@@ -394,36 +401,172 @@ function bindEvents() {
     if (view !== undefined) {
       state.selected = Number(view);
     } else if (like !== undefined) {
-      toggle(state.liked, state.disliked, likeKey(visibleTables()[Number(like)].query));
+      toggle(state.liked, state.disliked, visibleTables()[Number(like)].query);
     } else if (dislike !== undefined) {
-      toggle(state.disliked, state.liked, likeKey(visibleTables()[Number(dislike)].query));
+      toggle(state.disliked, state.liked, visibleTables()[Number(dislike)].query);
     } else return;
     renderResults();
   });
 }
 
 // ---------------------------------------------------------------------------
+// Guide mode: "?" popups on every part of the page, plus a next-step coach
+// ---------------------------------------------------------------------------
+const STORAGE = { on: "sage-guide-on", hintSeen: "sage-guide-hint-seen" };
+const guide = { on: false, tipFor: null, tipPinned: false, coachHiddenFor: null };
+
+function storageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function storageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
+}
+
+function placeNear(el, target, gap = 10) {
+  const r = target.getBoundingClientRect();
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const below = r.bottom + gap + h <= window.innerHeight || r.top - gap - h < 0;
+  const left = Math.min(Math.max(8, r.left + r.width / 2 - 28), window.innerWidth - w - 8);
+  el.style.left = `${left}px`;
+  el.style.top = `${below ? r.bottom + gap : r.top - gap - h}px`;
+  el.style.setProperty("--arrow-x", `${Math.min(Math.max(12, r.left + r.width / 2 - left), w - 12)}px`);
+  el.classList.toggle("below", below);
+  el.classList.toggle("above", !below);
+}
+
+function showTip(dot, pinned) {
+  const pop = $("guide-pop");
+  pop.textContent = GUIDE_TIPS[dot.dataset.tip] || "";
+  pop.hidden = false;
+  placeNear(pop, dot);
+  guide.tipFor = dot;
+  guide.tipPinned = pinned;
+}
+
+function hideTip() {
+  $("guide-pop").hidden = true;
+  guide.tipFor = null;
+  guide.tipPinned = false;
+}
+
+// The next thing to do in the demo loop, based on the current state.
+function coachStep() {
+  if (!state.recommend) {
+    return { id: "recommend", target: $("recommend-btn"), label: "Step 1 of 4",
+      text: "Click <b>Recommend</b> to get pivot table recommendations." };
+  }
+  if (state.iteration === 1) {
+    if (state.selected === null) {
+      return { id: "view", target: document.querySelector('[data-view="0"]'), label: "Step 2 of 4",
+        text: "Click <b>View Details</b> to see how this table is scored." };
+    }
+    const hasFeedback = visibleTables().some((p) => state.liked.has(p.query) || state.disliked.has(p.query));
+    if (!hasFeedback) {
+      return { id: "feedback", target: document.querySelector(`[data-like="${state.selected}"]`), label: "Step 3 of 4",
+        text: "Like 👍 or dislike 👎 tables to tell SAGE what you prefer." };
+    }
+    return { id: "again", target: $("recommend-btn"), label: "Step 4 of 4",
+      text: "Click <b>Recommend</b> again. In SAGE, your feedback guides the next round." };
+  }
+  return { id: "done", target: document.querySelector(".switch"), label: "All set",
+    text: "That's the full loop. Tap any <b>?</b> to learn what each part means." };
+}
+
+function isOnScreen(target) {
+  const r = target.getBoundingClientRect();
+  const scroller = target.closest(".panel-tall");
+  const box = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+  return r.bottom > Math.max(box.top, 0) && r.top < Math.min(box.bottom, window.innerHeight);
+}
+
+function updateCoach() {
+  const coach = $("guide-coach");
+  document.querySelectorAll(".guide-target").forEach((el) => el.classList.remove("guide-target"));
+  const step = guide.on ? coachStep() : null;
+  if (!step || !step.target || guide.coachHiddenFor === step.id) {
+    coach.hidden = true;
+    return;
+  }
+  step.target.classList.add("guide-target");
+  $("coach-step").textContent = step.label;
+  $("coach-text").innerHTML = step.text;
+  coach.hidden = !isOnScreen(step.target);
+  if (!coach.hidden) placeNear(coach, step.target, 12);
+}
+
+function setGuide(on) {
+  guide.on = on;
+  guide.coachHiddenFor = null;
+  document.body.classList.toggle("guide-on", on);
+  $("guide-toggle").checked = on;
+  storageSet(STORAGE.on, on ? "1" : "0");
+  hideTip();
+  updateCoach();
+}
+
+function dismissHint() {
+  $("guide-hint").hidden = true;
+  storageSet(STORAGE.hintSeen, "1");
+}
+
+function bindGuide() {
+  $("guide-toggle").addEventListener("change", (e) => { dismissHint(); setGuide(e.target.checked); });
+  $("guide-hint-on").addEventListener("click", () => { dismissHint(); setGuide(true); });
+  $("guide-hint-close").addEventListener("click", dismissHint);
+  $("coach-close").addEventListener("click", () => {
+    guide.coachHiddenFor = coachStep().id;
+    updateCoach();
+  });
+
+  const canHover = window.matchMedia("(hover: hover)").matches;
+  document.addEventListener("click", (e) => {
+    const dot = e.target.closest(".guide-dot");
+    if (dot) {
+      if (guide.tipFor === dot && guide.tipPinned) hideTip();
+      else showTip(dot, true);
+    } else if (!e.target.closest("#guide-pop")) {
+      hideTip();
+    }
+  });
+  if (canHover) {
+    document.addEventListener("mouseover", (e) => {
+      const dot = e.target.closest(".guide-dot");
+      if (dot && !guide.tipPinned) showTip(dot, false);
+    });
+    document.addEventListener("mouseout", (e) => {
+      const dot = e.target.closest(".guide-dot");
+      if (dot && guide.tipFor === dot && !guide.tipPinned) hideTip();
+    });
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+
+  let frame = 0;
+  const reposition = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      if (guide.tipFor) {
+        if (guide.tipFor.isConnected && isOnScreen(guide.tipFor)) placeNear($("guide-pop"), guide.tipFor);
+        else hideTip();
+      }
+      updateCoach();
+    });
+  };
+  window.addEventListener("resize", reposition);
+  document.addEventListener("scroll", reposition, true);
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
-async function init() {
+function init() {
   bindEvents();
+  bindGuide();
+  renderPreview();
+  renderAttributes();
   renderParams();
   renderResults();
-  $("recommend-btn").disabled = true;
-  try {
-    const res = await fetch(DATA_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const [columns, ...rows] = parseCSV(await res.text());
-    state.columns = columns;
-    state.rows = rows;
-    renderPreview();
-    renderAttributes();
-    $("recommend-btn").disabled = false;
-  } catch (err) {
-    $("preview").innerHTML = `<p class="muted center">Could not load ${esc(DATA_URL)} (${esc(err.message)}).
-      If you opened this file directly, serve the folder instead, e.g. <code>python3 -m http.server</code>.</p>`;
-    $("dataset-chip").textContent = "Dataset unavailable";
-  }
+  setGuide(storageGet(STORAGE.on) === "1");
+  if (!guide.on && storageGet(STORAGE.hintSeen) !== "1") $("guide-hint").hidden = false;
 }
 
 init();

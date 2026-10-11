@@ -14,14 +14,25 @@
       <h1>SAGE</h1>
       <p>Data-Semantics-Aware Recommendation of Diverse Pivot Tables</p>
     </div>
-    <div class="dataset-chip" id="dataset-chip">Loading dataset…</div>
+    <div class="topbar-right">
+      <div class="dataset-chip">Demo · results are precomputed examples</div>
+      <div class="guide-switch-wrap">
+        <label class="switch">
+          <input type="checkbox" id="guide-toggle" role="switch">
+          <span class="track" aria-hidden="true"></span>
+          <span>Guide mode</span>
+        </label>
+        <div class="guide-hint" id="guide-hint" hidden>
+          <button type="button" class="guide-hint-text" id="guide-hint-on">👋 New here? <b>Click here for guide mode</b></button>
+          <button type="button" class="guide-hint-close" id="guide-hint-close" aria-label="Dismiss">×</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <main>
     <section class="preview-band">
-      <div class="preview-card" id="preview">
-        <p class="muted center">Loading dataset…</p>
-      </div>
+      <div class="preview-card" id="preview"></div>
     </section>
 
     <section class="grid">
@@ -30,21 +41,21 @@
         <div class="panel panel-params">
           <h2>Parameters</h2>
 
-          <label class="field-label" for="diversity-input">Diversity (%)</label>
+          <div class="field-label"><label for="diversity-input">Diversity (%)</label><button type="button" class="guide-dot" data-tip="diversity" aria-label="What is this?">?</button></div>
           <div class="stepper">
             <button type="button" data-step="diversity" data-delta="-10" aria-label="Decrease diversity">−</button>
             <input type="number" id="diversity-input" min="10" max="100" step="10">
             <button type="button" data-step="diversity" data-delta="10" aria-label="Increase diversity">+</button>
           </div>
 
-          <label class="field-label" for="num-input">Number of tables</label>
+          <div class="field-label"><label for="num-input">Number of tables</label><button type="button" class="guide-dot" data-tip="numTables" aria-label="What is this?">?</button></div>
           <div class="stepper">
             <button type="button" data-step="numTables" data-delta="-1" aria-label="Decrease number of tables">−</button>
             <input type="number" id="num-input" min="1" max="10" step="1">
             <button type="button" data-step="numTables" data-delta="1" aria-label="Increase number of tables">+</button>
           </div>
 
-          <label class="field-label" for="attr-select">Preferred attributes</label>
+          <div class="field-label"><label for="attr-select">Preferred attributes</label><button type="button" class="guide-dot" data-tip="attributes" aria-label="What is this?">?</button></div>
           <select id="attr-select">
             <option value="">Choose an attribute…</option>
           </select>
@@ -53,6 +64,7 @@
 
         <div class="panel panel-action">
           <button type="button" class="btn-primary" id="recommend-btn">Recommend</button>
+          <button type="button" class="guide-dot" data-tip="recommend" aria-label="What is this?">?</button>
         </div>
       </div>
 
@@ -72,6 +84,13 @@
       </div>
     </section>
   </main>
+
+  <div class="guide-pop" id="guide-pop" role="tooltip" hidden></div>
+  <div class="coach" id="guide-coach" role="status" hidden>
+    <div class="coach-step" id="coach-step"></div>
+    <div class="coach-text" id="coach-text"></div>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Hide this tip">×</button>
+  </div>
 
   <script src="app.js"></script>
 </body>
