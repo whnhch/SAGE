@@ -43,14 +43,28 @@
           <p class="lock-note">🔒 Fixed in this demo<button type="button" class="guide-dot" data-tip="locked" aria-label="What is this?">?</button></p>
 
           <div class="field-label"><label for="diversity-input">Diversity (%)</label><button type="button" class="guide-dot" data-tip="diversity" aria-label="What is this?">?</button></div>
-          <input type="text" class="param-value" id="diversity-input" value="30" disabled>
+          <div class="stepper">
+            <button type="button" disabled aria-label="Decrease diversity">‹</button>
+            <input type="text" class="param-value" id="diversity-input" value="30" disabled>
+            <button type="button" disabled aria-label="Increase diversity">›</button>
+          </div>
 
           <div class="field-label"><label for="num-input">Number of tables</label><button type="button" class="guide-dot" data-tip="numTables" aria-label="What is this?">?</button></div>
-          <input type="text" class="param-value" id="num-input" value="5" disabled>
+          <div class="stepper">
+            <button type="button" disabled aria-label="Decrease number of tables">‹</button>
+            <input type="text" class="param-value" id="num-input" value="5" disabled>
+            <button type="button" disabled aria-label="Increase number of tables">›</button>
+          </div>
 
           <div class="field-label"><span id="attr-label">Preferred attributes</span><button type="button" class="guide-dot" data-tip="attributes" aria-label="What is this?">?</button></div>
-          <ul class="param-value param-tags" aria-labelledby="attr-label">
-            <li>City</li><li>Cuisines</li><li>Rating</li>
+          <ul class="attr-checklist" aria-labelledby="attr-label">
+            <li><label><input type="checkbox" disabled> ID</label></li>
+            <li><label><input type="checkbox" checked disabled> City</label></li>
+            <li><label><input type="checkbox" checked disabled> Cuisines</label></li>
+            <li><label><input type="checkbox" disabled> Price Range</label></li>
+            <li><label><input type="checkbox" disabled> Cost</label></li>
+            <li><label><input type="checkbox" checked disabled> Rating</label></li>
+            <li><label><input type="checkbox" disabled> Has Online Delivery</label></li>
           </ul>
         </div>
 

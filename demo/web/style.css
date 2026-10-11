@@ -122,37 +122,39 @@ th.rowname { background: #f7f7f7; }
 /* ---------- Parameters ---------- */
 .field-label { display: flex; align-items: center; margin: 16px 0 6px; }
 .lock-note { display: flex; align-items: center; margin: 0; color: var(--muted); font-size: 12px; }
-.param-value {
-  width: 100%;
+/* Locked controls: same shape as the real app's, greyed out */
+.stepper { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
+.stepper button, .param-value {
   height: 36px;
   border: 1px solid #ddd;
   border-radius: 6px;
   background: #ececec;
+  color: var(--muted);
+  font: inherit;
+  min-width: 0;
+  cursor: not-allowed;
+}
+.stepper button { font-size: 20px; line-height: 1; padding: 0 0 2px; }
+.param-value {
+  width: 100%;
+  text-align: center;
   color: var(--text);
   -webkit-text-fill-color: var(--text);
   opacity: 1;
-  font: inherit;
-  padding: 0 10px;
-  cursor: not-allowed;
+  padding: 0 4px;
 }
-.param-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  height: auto;
-  min-height: 36px;
+.attr-checklist {
   margin: 0;
-  padding: 6px;
+  padding: 6px 10px;
   list-style: none;
+  background: #ececec;
+  border: 1px solid #ddd;
+  border-radius: 6px;
 }
-.param-tags li {
-  background: #fff;
-  border: 1px solid #d4d4d4;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 600;
-}
+.attr-checklist li { padding: 3px 0; }
+.attr-checklist label { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: not-allowed; }
+.attr-checklist input { margin: 0; accent-color: #6b7280; cursor: not-allowed; }
+.attr-checklist input:checked + * , .attr-checklist label:has(input:checked) { color: var(--text); font-weight: 600; }
 
 .btn-primary {
   width: 100%;
