@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAGE Demo</title>
+  <meta name="description" content="SAGE: Data-Semantics-Aware Recommendation of Diverse Pivot Tables — interactive demo.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23ff4b4b%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 font-family=%27Arial%27 font-weight=%27bold%27 text-anchor=%27middle%27 fill=%27white%27%3ES%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>SAGE</h1>
+      <p>Data-Semantics-Aware Recommendation of Diverse Pivot Tables</p>
+    </div>
+    <div class="dataset-chip" id="dataset-chip">Loading dataset…</div>
+  </header>
+
+  <main>
+    <section class="preview-band">
+      <div class="preview-card" id="preview">
+        <p class="muted center">Loading dataset…</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <!-- Parameters -->
+      <div class="col col-params">
+        <div class="panel panel-params">
+          <h2>Parameters</h2>
+
+          <label class="field-label" for="diversity-input">Diversity (%)</label>
+          <div class="stepper">
+            <button type="button" data-step="diversity" data-delta="-10" aria-label="Decrease diversity">−</button>
+            <input type="number" id="diversity-input" min="10" max="100" step="10">
+            <button type="button" data-step="diversity" data-delta="10" aria-label="Increase diversity">+</button>
+          </div>
+
+          <label class="field-label" for="num-input">Number of tables</label>
+          <div class="stepper">
+            <button type="button" data-step="numTables" data-delta="-1" aria-label="Decrease number of tables">−</button>
+            <input type="number" id="num-input" min="1" max="10" step="1">
+            <button type="button" data-step="numTables" data-delta="1" aria-label="Increase number of tables">+</button>
+          </div>
+
+          <label class="field-label" for="attr-select">Preferred attributes</label>
+          <select id="attr-select">
+            <option value="">Choose an attribute…</option>
+          </select>
+          <div class="chips" id="attr-chips"></div>
+        </div>
+
+        <div class="panel panel-action">
+          <button type="button" class="btn-primary" id="recommend-btn">Recommend</button>
+        </div>
+      </div>
+
+      <!-- Recommendation list -->
+      <div class="col">
+        <div class="panel panel-tall" id="rec-list"></div>
+      </div>
+
+      <!-- Visualization -->
+      <div class="col">
+        <div class="panel panel-tall" id="detail"></div>
+      </div>
+
+      <!-- User preferences -->
+      <div class="col">
+        <div class="panel panel-tall" id="prefs"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
