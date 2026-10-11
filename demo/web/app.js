@@ -5,6 +5,22 @@
 // Attributes of the example restaurant dataset that the recommendations draw on.
 const ATTRIBUTES = ["ID", "City", "Cuisines", "Price Range", "Cost", "Rating", "Has Online Delivery"];
 
+// A few sample rows of the example dataset, shown in the preview.
+const SAMPLE_COLUMNS = ["ID", "Name", "City", "Cuisines", "Price Range", "Cost", "Rating", "Has Online Delivery"];
+const SAMPLE_ROWS = [
+  [2437, "28 Capri Italy", "New Delhi", "Italian", "$$$", 1500, 3.9, "Yes"],
+  [2217, "Tamura", "New Delhi", "Japanese", "$$$", 1500, 3.5, "No"],
+  [18221572, "Onesta", "Bengaluru", "Pizza, Cafe, Italian", "$$", 600, 4.3, "Yes"],
+  [18388642, "Grandmama's Cafe", "Mumbai", "Continental, Italian", "$$$", 1100, 3.8, "No"],
+  [18025105, "Sinyora's", "New Delhi", "Italian", "$$", 500, 4.0, "Yes"],
+  [18075122, "The Fusion Kitchen", "Mumbai", "North Indian, Italian, Chinese, Mexican", "$$$", 1000, 4.7, "Yes"],
+  [305125, "Amalfi", "New Delhi", "Italian", "$$$", 1800, 3.9, "No"],
+  [18305628, "Eat Street", "Bengaluru", "North Indian, Chinese, Italian, Street Food, Desserts", "$", 400, 4.3, "Yes"],
+  [18245248, "Pasta Hub", "New Delhi", "Italian", "$", 200, 3.0, "No"],
+  [18422898, "Hoot", "Bengaluru", "Continental, Italian, North Indian", "$$$", 1400, 3.9, "No"],
+];
+const PREVIEW_VISIBLE_ROWS = 3;
+
 // ---------------------------------------------------------------------------
 // Demo results
 // table: { rowName, rows, group (column-level header, optional), cols, values[row][col], decimals }
@@ -109,7 +125,7 @@ const ITER_RESULTS = {
 
 // Guide-mode explanations, keyed by the data-tip of each "?" badge.
 const GUIDE_TIPS = {
-  dataset: "The example dataset. SAGE searches over pivot tables built from these attributes: which to group by, which to aggregate, and how (AVG, COUNT, MAX, …).",
+  dataset: "A few rows of the example restaurant dataset. SAGE searches over pivot tables built from its columns: which to group by, which to aggregate, and how (AVG, COUNT, MAX, …).",
   diversity: "How different the recommended tables should be from one another. Higher values favor tables over different attributes and aggregations.",
   numTables: "How many pivot tables to recommend.",
   attributes: "Attributes you care about. SAGE favors tables that use them.",
@@ -228,8 +244,21 @@ function metricRow(name, value, overall = false, tipKey = name) {
 // Rendering
 // ---------------------------------------------------------------------------
 function renderPreview() {
-  $("preview").innerHTML = `<p><b>Example dataset:</b>${tip("dataset")} restaurants (city, cuisine, price range, cost, rating, online delivery)</p>
-    <div class="attr-list">${ATTRIBUTES.map((a) => `<span class="attr">${esc(a)}</span>`).join("")}</div>`;
+  const head = SAMPLE_COLUMNS.map((c) => `<th>${esc(c)}</th>`).join("");
+  const body = SAMPLE_ROWS
+    .map((r) => `<tr>${r.map((v, i) => typeof v === "number"
+      ? `<td class="num">${SAMPLE_COLUMNS[i] === "Rating" ? v.toFixed(1) : v}</td>`
+      : `<td>${esc(v)}</td>`).join("")}</tr>`)
+    .join("");
+  $("preview").innerHTML = `<div class="preview-head"><h3>Example dataset${tip("dataset")}</h3>
+      <span class="muted">${SAMPLE_ROWS.length} sample rows · scroll for more</span></div>
+    <div class="table-scroll preview-scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+
+  // Show the header plus the first few rows; the rest scroll.
+  const scroller = $("preview").querySelector(".preview-scroll");
+  const rows = scroller.querySelectorAll("tbody tr");
+  const visible = [...rows].slice(0, PREVIEW_VISIBLE_ROWS).reduce((h, r) => h + r.offsetHeight, 0);
+  scroller.style.maxHeight = `${scroller.querySelector("thead").offsetHeight + visible + 1}px`;
 }
 
 function renderAttributes() {
@@ -413,7 +442,8 @@ function bindEvents() {
 // Guide mode: "?" popups on every part of the page, plus a next-step coach
 // ---------------------------------------------------------------------------
 const STORAGE = { on: "sage-guide-on", hintSeen: "sage-guide-hint-seen" };
-const guide = { on: false, tipFor: null, tipPinned: false, coachHiddenFor: null };
+// intro: how many of the read-only intro steps (preview data, set parameters) have been passed with "Next".
+const guide = { on: false, tipFor: null, tipPinned: false, coachHiddenFor: null, intro: 0 };
 
 function storageGet(key) {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -422,16 +452,31 @@ function storageSet(key, value) {
   try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
 }
 
-function placeNear(el, target, gap = 10) {
+// place: "right" puts the popup beside the target when there is room; otherwise below
+// (or above when "above" is preferred or there's no room below).
+function placeNear(el, target, gap = 10, place = "below") {
   const r = target.getBoundingClientRect();
   const w = el.offsetWidth, h = el.offsetHeight;
-  const below = r.bottom + gap + h <= window.innerHeight || r.top - gap - h < 0;
-  const left = Math.min(Math.max(8, r.left + r.width / 2 - 28), window.innerWidth - w - 8);
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  let side;
+  if (place === "right" && r.right + gap + w <= window.innerWidth - 8) side = "right";
+  else if (place === "above" || place === "right") side = r.top - gap - h >= 0 ? "above" : "below";
+  else side = r.bottom + gap + h <= window.innerHeight || r.top - gap - h < 0 ? "below" : "above";
+
+  let left, top;
+  if (side === "right") {
+    left = r.right + gap;
+    // top-aligned so a tall target (a whole panel) gets the popup beside its heading
+    top = clamp(r.top, 8, window.innerHeight - h - 8);
+    el.style.setProperty("--arrow-y", `${clamp(r.top + Math.min(r.height / 2, 32) - top, 12, h - 12)}px`);
+  } else {
+    left = clamp(r.left + r.width / 2 - 28, 8, window.innerWidth - w - 8);
+    top = side === "below" ? r.bottom + gap : r.top - gap - h;
+    el.style.setProperty("--arrow-x", `${clamp(r.left + r.width / 2 - left, 12, w - 12)}px`);
+  }
   el.style.left = `${left}px`;
-  el.style.top = `${below ? r.bottom + gap : r.top - gap - h}px`;
-  el.style.setProperty("--arrow-x", `${Math.min(Math.max(12, r.left + r.width / 2 - left), w - 12)}px`);
-  el.classList.toggle("below", below);
-  el.classList.toggle("above", !below);
+  el.style.top = `${top}px`;
+  ["below", "above", "right"].forEach((c) => el.classList.toggle(c, c === side));
 }
 
 function showTip(dot, pinned) {
@@ -450,22 +495,32 @@ function hideTip() {
 }
 
 // The next thing to do in the demo loop, based on the current state.
+// target is outlined; anchor (defaults to target) is what the popup points at.
+const COACH_TOTAL = 6;
 function coachStep() {
   if (!state.recommend) {
-    return { id: "recommend", target: $("recommend-btn"), label: "Step 1 of 4",
+    if (guide.intro < 1) {
+      return { id: "preview", n: 1, target: $("preview"), next: true,
+        text: "<b>Preview your data.</b> These are sample rows of the example dataset; scroll the table to see more." };
+    }
+    if (guide.intro < 2) {
+      return { id: "params", n: 2, target: document.querySelector(".panel-params"), place: "right", next: true,
+        text: "<b>Set the parameters:</b> diversity, number of tables and, optionally, preferred attributes." };
+    }
+    return { id: "recommend", n: 3, target: $("recommend-btn"),
       text: "Click <b>Recommend</b> to get pivot table recommendations." };
   }
   if (state.iteration === 1) {
     if (state.selected === null) {
-      return { id: "view", target: document.querySelector('[data-view="0"]'), label: "Step 2 of 4",
+      return { id: "view", n: 4, target: document.querySelector('[data-view="0"]'),
         text: "Click <b>View Details</b> to see how this table is scored." };
     }
     const hasFeedback = visibleTables().some((p) => state.liked.has(p.query) || state.disliked.has(p.query));
     if (!hasFeedback) {
-      return { id: "feedback", target: document.querySelector(`[data-like="${state.selected}"]`), label: "Step 3 of 4",
+      return { id: "feedback", n: 5, target: document.querySelector(`[data-like="${state.selected}"]`),
         text: "Like 👍 or dislike 👎 tables to tell SAGE what you prefer." };
     }
-    return { id: "again", target: $("recommend-btn"), label: "Step 4 of 4",
+    return { id: "again", n: 6, target: $("recommend-btn"),
       text: "Click <b>Recommend</b> again. In SAGE, your feedback guides the next round." };
   }
   return { id: "done", target: document.querySelector(".switch"), label: "All set",
@@ -487,11 +542,13 @@ function updateCoach() {
     coach.hidden = true;
     return;
   }
+  const anchor = step.anchor || step.target;
   step.target.classList.add("guide-target");
-  $("coach-step").textContent = step.label;
+  $("coach-step").textContent = step.label || `Step ${step.n} of ${COACH_TOTAL}`;
   $("coach-text").innerHTML = step.text;
-  coach.hidden = !isOnScreen(step.target);
-  if (!coach.hidden) placeNear(coach, step.target, 12);
+  $("coach-next").hidden = !step.next;
+  coach.hidden = !isOnScreen(anchor);
+  if (!coach.hidden) placeNear(coach, anchor, 12, step.place);
 }
 
 function setGuide(on) {
@@ -513,6 +570,10 @@ function bindGuide() {
   $("guide-toggle").addEventListener("change", (e) => { dismissHint(); setGuide(e.target.checked); });
   $("guide-hint-on").addEventListener("click", () => { dismissHint(); setGuide(true); });
   $("guide-hint-close").addEventListener("click", dismissHint);
+  $("coach-next").addEventListener("click", () => {
+    guide.intro += 1;
+    updateCoach();
+  });
   $("coach-close").addEventListener("click", () => {
     guide.coachHiddenFor = coachStep().id;
     updateCoach();
