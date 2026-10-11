@@ -40,26 +40,18 @@
       <div class="col col-params">
         <div class="panel panel-params">
           <h2>Parameters</h2>
+          <p class="lock-note">🔒 Fixed in this demo<button type="button" class="guide-dot" data-tip="locked" aria-label="What is this?">?</button></p>
 
           <div class="field-label"><label for="diversity-input">Diversity (%)</label><button type="button" class="guide-dot" data-tip="diversity" aria-label="What is this?">?</button></div>
-          <div class="stepper">
-            <button type="button" data-step="diversity" data-delta="-10" aria-label="Decrease diversity">−</button>
-            <input type="number" id="diversity-input" min="10" max="100" step="10">
-            <button type="button" data-step="diversity" data-delta="10" aria-label="Increase diversity">+</button>
-          </div>
+          <input type="text" class="param-value" id="diversity-input" value="30" disabled>
 
           <div class="field-label"><label for="num-input">Number of tables</label><button type="button" class="guide-dot" data-tip="numTables" aria-label="What is this?">?</button></div>
-          <div class="stepper">
-            <button type="button" data-step="numTables" data-delta="-1" aria-label="Decrease number of tables">−</button>
-            <input type="number" id="num-input" min="1" max="10" step="1">
-            <button type="button" data-step="numTables" data-delta="1" aria-label="Increase number of tables">+</button>
-          </div>
+          <input type="text" class="param-value" id="num-input" value="5" disabled>
 
-          <div class="field-label"><label for="attr-select">Preferred attributes</label><button type="button" class="guide-dot" data-tip="attributes" aria-label="What is this?">?</button></div>
-          <select id="attr-select">
-            <option value="">Choose an attribute…</option>
-          </select>
-          <div class="chips" id="attr-chips"></div>
+          <div class="field-label"><span id="attr-label">Preferred attributes</span><button type="button" class="guide-dot" data-tip="attributes" aria-label="What is this?">?</button></div>
+          <ul class="param-value param-tags" aria-labelledby="attr-label">
+            <li>City</li><li>Cuisines</li><li>Rating</li>
+          </ul>
         </div>
 
         <div class="panel panel-action">

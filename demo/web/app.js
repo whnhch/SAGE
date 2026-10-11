@@ -2,9 +2,6 @@
 // Recommendations are the precomputed example results from
 // demo/demo/components/table_list.py and pivot_table.py.
 
-// Attributes of the example restaurant dataset that the recommendations draw on.
-const ATTRIBUTES = ["ID", "City", "Cuisines", "Price Range", "Cost", "Rating", "Has Online Delivery"];
-
 // A few sample rows of the example dataset, shown in the preview.
 const SAMPLE_COLUMNS = ["ID", "Name", "City", "Cuisines", "Price Range", "Cost", "Rating", "Has Online Delivery"];
 const SAMPLE_ROWS = [
@@ -119,16 +116,18 @@ const PIVOT_TABLES_ITER2 = [
 ];
 
 const ITER_RESULTS = {
-  1: { tables: PIVOT_TABLES_ITER1, diversity: 32 },
-  2: { tables: PIVOT_TABLES_ITER2, diversity: 30 },
+  // params: the (fixed) settings each round was precomputed with; diversity: what the set achieved.
+  1: { tables: PIVOT_TABLES_ITER1, diversity: 32, params: { diversity: 30, numTables: 5 } },
+  2: { tables: PIVOT_TABLES_ITER2, diversity: 30, params: { diversity: 30, numTables: 3 } },
 };
 
 // Guide-mode explanations, keyed by the data-tip of each "?" badge.
 const GUIDE_TIPS = {
   dataset: "A few rows of the example restaurant dataset. SAGE searches over pivot tables built from its columns: which to group by, which to aggregate, and how (AVG, COUNT, MAX, …).",
+  locked: "The recommendations in this demo were precomputed with these settings, so they can't be changed here.",
   diversity: "How different the recommended tables should be from one another. Higher values favor tables over different attributes and aggregations.",
-  numTables: "How many pivot tables to recommend.",
-  attributes: "Attributes you care about. SAGE favors tables that use them.",
+  numTables: "How many pivot tables to recommend. In this demo: 5 in the first round, 3 in the next.",
+  attributes: "Attributes you care about. SAGE favors tables that use them. In this demo: City, Cuisines and Rating.",
   recommend: "Runs SAGE with these settings. In this demo the results are precomputed.",
   recs: "The recommended pivot tables, chosen to be both high-quality and varied.",
   achievedDiversity: "How varied the recommended set actually is.",
@@ -154,9 +153,6 @@ const GUIDE_TIPS = {
 // State
 // ---------------------------------------------------------------------------
 const state = {
-  diversity: 20,
-  numTables: 5,
-  attributes: [],
   iteration: 0,
   recommend: false,
   selected: null,
@@ -167,7 +163,7 @@ const state = {
 
 // First click shows iteration-1 results; every later click shows iteration-2 results.
 const currentResults = () => ITER_RESULTS[state.iteration <= 1 ? 1 : 2];
-const visibleTables = () => currentResults().tables.slice(0, state.numTables);
+const visibleTables = () => currentResults().tables;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -261,21 +257,6 @@ function renderPreview() {
   scroller.style.maxHeight = `${scroller.querySelector("thead").offsetHeight + visible + 1}px`;
 }
 
-function renderAttributes() {
-  const select = $("attr-select");
-  const available = ATTRIBUTES.filter((c) => !state.attributes.includes(c));
-  select.innerHTML = `<option value="">Choose an attribute…</option>` +
-    available.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  $("attr-chips").innerHTML = state.attributes
-    .map((a, i) => `<span class="chip">${esc(a)}<button type="button" data-remove-attr="${i}" aria-label="Remove ${esc(a)}">×</button></span>`)
-    .join("");
-}
-
-function renderParams() {
-  $("diversity-input").value = state.diversity;
-  $("num-input").value = state.numTables;
-}
-
 function renderList() {
   const el = $("rec-list");
   if (!state.recommend) {
@@ -366,7 +347,15 @@ function renderPrefs() {
     </div>`;
 }
 
+// Show the settings of the round on screen (round 1 before the first Recommend).
+function renderParams() {
+  const { diversity, numTables } = currentResults().params;
+  $("diversity-input").value = diversity;
+  $("num-input").value = numTables;
+}
+
 function renderResults() {
+  renderParams();
   renderList();
   renderDetail();
   renderPrefs();
@@ -377,45 +366,12 @@ function renderResults() {
 // ---------------------------------------------------------------------------
 // Events
 // ---------------------------------------------------------------------------
-const LIMITS = { diversity: [10, 100], numTables: [1, 10] };
-
-function setParam(name, value) {
-  const [lo, hi] = LIMITS[name];
-  const n = Number(value);
-  state[name] = Math.min(hi, Math.max(lo, Number.isFinite(n) ? Math.round(n) : state[name]));
-  renderParams();
-  if (name === "numTables") {
-    if (state.selected !== null && state.selected >= state.numTables) state.selected = null;
-    renderResults();
-  }
-}
-
 function toggle(set, other, key) {
   if (set.has(key)) set.delete(key);
   else { set.add(key); other.delete(key); }
 }
 
 function bindEvents() {
-  document.querySelectorAll("[data-step]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const name = btn.dataset.step;
-      setParam(name, state[name] + Number(btn.dataset.delta));
-    });
-  });
-  $("diversity-input").addEventListener("change", (e) => setParam("diversity", e.target.value));
-  $("num-input").addEventListener("change", (e) => setParam("numTables", e.target.value));
-
-  $("attr-select").addEventListener("change", (e) => {
-    if (e.target.value) state.attributes.push(e.target.value);
-    renderAttributes();
-  });
-  $("attr-chips").addEventListener("click", (e) => {
-    const i = e.target.dataset.removeAttr;
-    if (i === undefined) return;
-    state.attributes.splice(Number(i), 1);
-    renderAttributes();
-  });
-
   $("recommend-btn").addEventListener("click", () => {
     state.iteration += 1;
     state.recommend = true;
@@ -505,7 +461,7 @@ function coachStep() {
     }
     if (guide.intro < 2) {
       return { id: "params", n: 2, target: document.querySelector(".panel-params"), place: "right", next: true,
-        text: "<b>Set the parameters:</b> diversity, number of tables and, optionally, preferred attributes." };
+        text: "<b>Check the parameters.</b> They're fixed in this demo: 30% diversity, 5 tables (3 in the next round), and City, Cuisines and Rating as preferred attributes." };
     }
     return { id: "recommend", n: 3, target: $("recommend-btn"),
       text: "Click <b>Recommend</b> to get pivot table recommendations." };
@@ -623,8 +579,6 @@ function init() {
   bindEvents();
   bindGuide();
   renderPreview();
-  renderAttributes();
-  renderParams();
   renderResults();
   setGuide(storageGet(STORAGE.on) === "1");
   if (!guide.on && storageGet(STORAGE.hintSeen) !== "1") $("guide-hint").hidden = false;

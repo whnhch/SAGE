@@ -121,47 +121,37 @@ th.rowname { background: #f7f7f7; }
 
 /* ---------- Parameters ---------- */
 .field-label { display: flex; align-items: center; margin: 16px 0 6px; }
-.stepper { display: grid; grid-template-columns: 40px 1fr 40px; gap: 6px; }
-.stepper button, .stepper input {
-  height: 36px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: var(--card);
-  font: inherit;
-  min-width: 0;
-}
-.stepper button { cursor: pointer; font-size: 16px; }
-.stepper button:hover { border-color: var(--accent); color: var(--accent); }
-.stepper input { text-align: center; padding: 0 4px; }
-
-select {
+.lock-note { display: flex; align-items: center; margin: 0; color: var(--muted); font-size: 12px; }
+.param-value {
   width: 100%;
   height: 36px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  background: var(--card);
+  background: #ececec;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  opacity: 1;
   font: inherit;
-  padding: 0 8px;
+  padding: 0 10px;
+  cursor: not-allowed;
 }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--accent);
-  color: #fff;
+.param-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  height: auto;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+.param-tags li {
+  background: #fff;
+  border: 1px solid #d4d4d4;
   border-radius: 4px;
-  padding: 2px 4px 2px 8px;
+  padding: 2px 8px;
   font-size: 12px;
-}
-.chip button {
-  border: 0;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 4px;
+  font-weight: 600;
 }
 
 .btn-primary {
